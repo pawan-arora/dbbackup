@@ -3,13 +3,14 @@ import os
 import gzip
 import shutil
 from utils.logger import logger
-
+from pathlib import Path
 
 def backup(config, date, tables=None, schema_only=False, data_only=False, compress=False):
     my = config["mysql"]
     db = my["database"]
-    file_name = f"mysql_backup_{date}.sql"
-    file_path = os.path.join("/tmp", file_name)
+    tmp_dir = Path(os.getenv("TMP", os.getenv("TEMP", "/tmp")))
+    backup_filename = f"mysql_backup_{date}.sql"
+    file_path = tmp_dir / backup_filename
 
     cmd = [
         "mysqldump",

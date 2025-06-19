@@ -1,0 +1,55 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        // Full Backup - Postgres
+        {
+            "name": "Backup Postgres Full",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["backup", "--db", "postgres", "--count", "1", "--compress"],
+            "console": "integratedTerminal"
+        },
+
+        // Backup specific tables - Postgres
+        {
+            "name": "Backup Postgres Tables Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["backup", "--db", "postgres", "--tables", "employee,department", "--count", "1"],
+            "console": "integratedTerminal"
+        },
+
+        // Full Backup - MySQL
+        {
+            "name": "Backup MySQL Full",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["backup", "--db", "mysql", "--count", "1", "--compress"],
+            "console": "integratedTerminal"
+        },
+
+        // Backup MySQL specific tables
+        {
+            "name": "Backup MySQL Tables Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["backup", "--db", "mysql", "--tables", "employees,departments", "--count", "1"],
+            "console": "integratedTerminal"
+        },
+
+        // Cleanup S3 backups older than 10 days
+        {
+            "name": "Cleanup S3",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["cleanup", "--retention-days", "10"],
+            "console": "integratedTerminal"
+        }
+    ]
+}

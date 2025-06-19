@@ -9,8 +9,8 @@ def upload_to_s3(file_path, config):
 
     s3 = boto3.client(
         "s3",
-        aws_access_key_id=s3_conf["access_key"],
-        aws_secret_access_key=s3_conf["secret_key"],
+        aws_access_key_id=s3_conf["aws_access_key_id"],
+        aws_secret_access_key=s3_conf["aws_secret_access_key"],
         region_name=s3_conf["region"]
     )
 

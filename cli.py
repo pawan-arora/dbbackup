@@ -18,6 +18,7 @@ def cli():
 @click.option('--schema-only', is_flag=True)
 @click.option('--data-only', is_flag=True)
 @click.option('--compress', is_flag=True)
+@click.option('--notify', is_flag=True, help='Send notification after backup completion')
 def backup(db, count, tables, schema_only, data_only, compress):
     config = load_config()
     emailer = EmailNotifier(config)
