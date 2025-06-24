@@ -17,6 +17,7 @@ def upload_to_s3(file_path, config):
     logger.info(f"Uploading {file_path} to S3 bucket {bucket}")
     s3.upload_file(file_path, bucket, key)
     logger.info("Upload successful.")
+    s3.close()
 
 def list_backups(config, db):
     s3_conf = config["s3"]

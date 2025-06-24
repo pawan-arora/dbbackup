@@ -1,2 +1,5 @@
 .history/
 config.yaml
+logs/
+schedules.json
+__pycache__/

@@ -24,6 +24,6 @@ def cleanup_s3(config, retention_days):
     for obj in response['Contents']:
         last_modified = obj['LastModified']
         age = (now - last_modified).days
-        if age > retention_days:
+        if age >= retention_days:
             logger.info(f"Deleting {obj['Key']} (age: {age} days)")
             s3.delete_object(Bucket=bucket, Key=obj['Key'])

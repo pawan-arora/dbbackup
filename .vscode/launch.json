@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
 
-        // Full Backup - Postgres
+        // Full Backup - Postgres (Immediate)
         {
             "name": "Backup Postgres Full",
             "type": "debugpy",
@@ -12,7 +12,7 @@
             "console": "integratedTerminal"
         },
 
-        // Backup specific tables - Postgres
+        // Backup specific tables - Postgres (Immediate)
         {
             "name": "Backup Postgres Tables Only",
             "type": "debugpy",
@@ -22,7 +22,7 @@
             "console": "integratedTerminal"
         },
 
-        // Full Backup - MySQL
+        // Full Backup - MySQL (Immediate)
         {
             "name": "Backup MySQL Full",
             "type": "debugpy",
@@ -32,7 +32,7 @@
             "console": "integratedTerminal"
         },
 
-        // Backup MySQL specific tables
+        // Backup specific tables - MySQL (Immediate)
         {
             "name": "Backup MySQL Tables Only",
             "type": "debugpy",
@@ -48,7 +48,67 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",
-            "args": ["cleanup", "--retention-days", "10"],
+            "args": ["cleanup", "--retention-days", "1"],
+            "console": "integratedTerminal"
+        },
+
+        // New: Schedule Backup - Postgres
+        {
+            "name": "Schedule Backup Postgres (5 backups every 1 day)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["schedule", "--db", "postgres", "--count", "5", "--gap", "1", "--notify", "your_email@example.com"],
+            "console": "integratedTerminal"
+        },
+
+        // New: Schedule Backup - MySQL
+        {
+            "name": "Schedule Backup MySQL (3 backups every 2 days)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["schedule", "--db", "mysql", "--count", "3", "--gap", "2", "--notify", "pawan_arora1616@yahoo.com"],
+            "console": "integratedTerminal"
+        },
+
+        // New: View active schedules (status)
+        {
+            "name": "Check Active Schedules",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["status"],
+            "console": "integratedTerminal"
+        },
+
+        // New: Cancel active schedule - Postgres
+        {
+            "name": "Cancel Postgres Schedule",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["cancel", "--db", "postgres"],
+            "console": "integratedTerminal"
+        },
+
+        // New: Cancel active schedule - MySQL
+        {
+            "name": "Cancel MySQL Schedule",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["cancel", "--db", "mysql"],
+            "console": "integratedTerminal"
+        },
+
+        // New: Show Logs (Last 50 lines)
+        {
+            "name": "Show Logs",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["logs", "--lines", "50"],
             "console": "integratedTerminal"
         }
     ]

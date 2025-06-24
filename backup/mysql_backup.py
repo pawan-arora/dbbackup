@@ -38,7 +38,7 @@ def backup(config, date, tables=None, schema_only=False, data_only=False, compre
     logger.info(f"Backup successful: {file_path}")
 
     if compress:
-        compressed_path = file_path + ".gz"
+        compressed_path = file_path.with_suffix(file_path.suffix + ".gz")
         with open(file_path, 'rb') as f_in, gzip.open(compressed_path, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
         os.remove(file_path)

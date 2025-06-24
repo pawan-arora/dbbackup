@@ -1,13 +1,20 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy everything into the image
-COPY . /app
-
 # Install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Run CLI tool by default — override if needed
-ENTRYPOINT ["python", "cli.py"]
+# Copy only source code, NOT configs or logs
+COPY cli.py scheduler.py config_loader.py state_manager.py ./
+COPY backup ./backup
+COPY s3 ./s3
+COPY utils ./utils
+COPY cleanup ./cleanup
+
+# Create logs directory inside image (empty initially)
+RUN mkdir -p logs
+
+# Default CMD: start scheduler on container start
+CMD ["python", "scheduler.py"]
