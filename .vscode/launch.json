@@ -31,7 +31,14 @@
             "args": ["backup", "--db", "mysql", "--count", "1", "--compress"],
             "console": "integratedTerminal"
         },
-
+        {
+            "name": "Backup MySQL compressed incremental",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["backup", "--db", "mysql", "--count", "1", "--compress", "--incremental"],
+            "console": "integratedTerminal"
+        },
         // Backup specific tables - MySQL (Immediate)
         {
             "name": "Backup MySQL Tables Only",

@@ -1,25 +1,26 @@
 import click
 import threading
-import time
 import os
 from datetime import datetime
 from config_loader import load_config
-from backup import mysql_backup, postgres_backup
+from backup import mysql_backup, postgres_backup, incremental_backup
 from s3 import uploader
 from cleanup import s3_cleanup
 from utils.logger import logger
 from utils.email_notifier import EmailNotifier
 from scheduler import Scheduler
 from state_manager import StateManager
+from utils.mysql_log_check import is_binary_logging_enabled
+from utils.postgres_log_check import is_wal_archiving_enabled
 
-# Globals for scheduler and state manager
+# Globals
 STATE_FILE = "schedules.json"
 LOG_FILE = "logs/backup.log"
 
 state_manager = StateManager()
 scheduler = Scheduler(state_manager)
 
-def run_backup(config, db, count, tables, schema_only, data_only, compress, notify_email):
+def run_backup(config, db, count, tables, schema_only, data_only, compress, notify_email, incremental):
     tables_list = tables.split(',') if tables else None
     emailer = EmailNotifier()
     uploaded_files = []
@@ -28,29 +29,45 @@ def run_backup(config, db, count, tables, schema_only, data_only, compress, noti
     for i in range(count):
         try:
             date_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-            logger.info(f"Starting backup {i+1} of {count} for {db}")
+            logger.info(f"Starting backup {i + 1} of {count} for {db}")
 
-            if db == 'postgres':
-                file_path = postgres_backup.backup(config, date_str, tables_list, schema_only, data_only, compress)
-            elif db == 'mysql':
-                file_path = mysql_backup.backup(config, date_str, tables_list, schema_only, data_only, compress)
+            # Incremental logic
+            if incremental:
+                if db == 'mysql':
+                    if not is_binary_logging_enabled(config):
+                        raise Exception("Binary logging is not enabled for MySQL.")
+                    file_path = incremental_backup.mysql_incremental_backup(config, date_str)
+                elif db == 'postgres':
+                    if not is_wal_archiving_enabled(config):
+                        raise Exception("WAL archiving is not enabled for PostgreSQL.")
+                    file_path = incremental_backup.postgres_incremental_backup(config, date_str)
+                else:
+                    raise Exception("Unsupported DB type for incremental backup")
             else:
-                logger.error("Unsupported DB type")
-                backup_success = False
-                break
+                if db == 'mysql':
+                    file_path = mysql_backup.backup(config, date_str, tables_list, schema_only, data_only, compress)
+                elif db == 'postgres':
+                    file_path = postgres_backup.backup(config, date_str, tables_list, schema_only, data_only, compress)
+                else:
+                    raise Exception("Unsupported DB type")
 
-            try:
-                uploader.upload_to_s3(file_path, config)
-                uploaded_files.append(file_path)
-                logger.info(f"Uploaded backup file {file_path} to S3")
-            except Exception as e:
-                logger.error(f"Upload to S3 failed for file {file_path}: {e}")
-                backup_success = False
+            # Upload
+            uploader.upload_to_s3(file_path, config)
+            uploaded_files.append(file_path)
+            logger.info(f"Uploaded backup file {file_path} to S3")
 
         except Exception as e:
-            logger.error(f"Backup failed for {db}: {e}")
+            logger.error(f"Backup failed: {e}")
             backup_success = False
-            break
+
+        finally:
+            # Always clean up local backup file
+            try:
+                if 'file_path' in locals() and os.path.exists(file_path):
+                    os.remove(file_path)
+                    logger.info(f"Deleted local file: {file_path}")
+            except Exception as cleanup_err:
+                logger.warning(f"Failed to delete local file: {cleanup_err}")
 
     if backup_success:
         logger.info("All backups and uploads completed successfully.")
@@ -58,8 +75,6 @@ def run_backup(config, db, count, tables, schema_only, data_only, compress, noti
         logger.warning("Backup process completed with errors.")
 
     if notify_email:
-        logger.info(f"Sending notification email to {notify_email}")
-        # send notification on a background thread to not block CLI
         t = threading.Thread(
             target=emailer.notify_in_background,
             args=(config, notify_email, uploaded_files, db, count, backup_success)
@@ -79,10 +94,11 @@ def cli():
 @click.option('--data-only', is_flag=True)
 @click.option('--compress', is_flag=True)
 @click.option('--notify', default=None, help='Email address to notify after upload completes')
-def backup(db, count, tables, schema_only, data_only, compress, notify):
+@click.option('--incremental', is_flag=True, help='Perform an incremental backup')
+def backup(db, count, tables, schema_only, data_only, compress, notify, incremental):
     """Take immediate backups"""
     config = load_config()
-    run_backup(config, db, count, tables, schema_only, data_only, compress, notify)
+    run_backup(config, db, count, tables, schema_only, data_only, compress, notify, incremental)
 
 @cli.command()
 @click.option('--db', required=True, type=click.Choice(['postgres', 'mysql']))
@@ -96,8 +112,6 @@ def backup(db, count, tables, schema_only, data_only, compress, notify):
 def schedule(db, count, gap, tables, schema_only, data_only, compress, notify):
     """Schedule recurring backups"""
     config = load_config()
-
-    # Add or update schedule in persistent state
     scheduler.add_schedule(
         db=db,
         count=count,

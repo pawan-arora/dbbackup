@@ -1,0 +1,5 @@
+[mysqld]
+server-id=1
+log-bin=mysql-bin
+binlog_format=ROW
+expire_logs_days=7

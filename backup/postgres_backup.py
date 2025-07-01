@@ -2,13 +2,16 @@ import subprocess
 import os
 import gzip
 import shutil
+from pathlib import Path
 from utils.logger import logger
+from utils.docker_helper import find_running_container, run_command_with_fallback
 
 def backup(config, date, tables=None, schema_only=False, data_only=False, compress=False):
     pg = config["postgres"]
     db = pg["database"]
-    file_name = f"postgres_backup_{date}.sql"
-    file_path = os.path.join("/tmp", file_name)
+    tmp_dir = Path(os.getenv("TMP", os.getenv("TEMP", "/tmp")))
+    backup_filename = f"postgres_backup_{date}.sql"
+    file_path = tmp_dir / backup_filename
 
     cmd = [
         "pg_dump",
@@ -26,19 +29,23 @@ def backup(config, date, tables=None, schema_only=False, data_only=False, compre
     if data_only:
         cmd.append("--data-only")
 
-    with open(file_path, "w") as f:
-        env = os.environ.copy()
-        env["PGPASSWORD"] = pg["password"]
-        result = subprocess.run(cmd, env=env, stdout=f, stderr=subprocess.PIPE)
+    # Set PGPASSWORD for authentication
+    env = os.environ.copy()
+    env["PGPASSWORD"] = pg["password"]
 
-    if result.returncode != 0:
-        logger.error(f"Backup failed: {result.stderr.decode()}")
+    # Detect running postgres Docker container
+    container = find_running_container("postgres")
+
+    # Run pg_dump with fallback logic
+    success = run_command_with_fallback(cmd, file_path, env=env, fallback_container=container)
+
+    if not success:
         raise Exception("pg_dump failed")
 
     logger.info(f"Backup successful: {file_path}")
 
     if compress:
-        compressed_path = file_path + ".gz"
+        compressed_path = file_path.with_suffix(file_path.suffix + ".gz")
         with open(file_path, 'rb') as f_in, gzip.open(compressed_path, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
         os.remove(file_path)
