@@ -1,11 +1,9 @@
 import os
 import gzip
 import shutil
-import subprocess
 from utils.logger import logger
 from pathlib import Path
 from utils.docker_helper import find_running_container, run_command_with_fallback
-from datetime import datetime
 
 def backup(config, date, tables=None, schema_only=False, data_only=False, compress=False):
     my = config["mysql"]

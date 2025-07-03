@@ -1,11 +1,14 @@
 import json
 import os
+import threading
 
 CONFIG_FILE = "config.yaml"
 
 class StateManager:
     def __init__(self):
         self.state_file = os.path.join("config", "schedules.json")
+        os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
+        self.lock = threading.Lock()
 
     def load_schedules(self):
         if not os.path.exists(self.state_file):

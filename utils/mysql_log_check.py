@@ -1,9 +1,11 @@
 import os
-from docker_helper import find_running_container, run_command_with_fallback
+from utils.docker_helper import find_running_container, run_command_with_fallback
+import tempfile
 
 def is_binary_logging_enabled(config):
     my = config['mysql']
-    file_path = "/tmp/log_bin_status.txt"
+    file_path = tempfile.mktemp(suffix="_log_bin_status.txt")
+    # file_path = "/tmp/log_bin_status.txt"
     cmd = [
         "mysql",
         "-h", my["host"],

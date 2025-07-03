@@ -1,12 +1,12 @@
 import threading
 import time
-import logging
 from datetime import datetime
 from backup import mysql_backup, postgres_backup
 from s3 import uploader
 from utils.logger import logger
 from utils.email_notifier import EmailNotifier
 from utils.logger import disable_console_logging
+from datetime import datetime, timedelta
 
 class Scheduler:
     def __init__(self, state_manager):
@@ -34,7 +34,7 @@ class Scheduler:
 
     def _run_schedule(self, db):
         # Disable console logs for scheduler thread
-        disable_console_logging()
+        # disable_console_logging()
         while True:
             with self.lock:
                 schedule = self.schedules.get(db)
@@ -50,6 +50,17 @@ class Scheduler:
                     self.state_manager.save_schedules(self.schedules)
                     break
 
+                gap_days = schedule.get("gap", 1)
+                last_backup_str = schedule.get("last_backup_time")
+                if last_backup_str:
+                    last_backup_time = datetime.strptime(last_backup_str, "%Y-%m-%d %H:%M:%S")
+                    next_allowed_time = last_backup_time + timedelta(days=gap_days)
+                    now = datetime.now()
+                    if now < next_allowed_time:
+                        sleep_seconds = (next_allowed_time - now).total_seconds()
+                        logger.info(f"Next backup for {db} scheduled in {int(sleep_seconds)} seconds.")
+                        time.sleep(sleep_seconds)
+
                 # Prepare backup params
                 config = schedule.get("config")
                 tables = schedule.get("tables")
@@ -60,15 +71,14 @@ class Scheduler:
 
             logger.info(f"Starting scheduled backup {completed + 1} of {count} for {db}")
 
-            # Perform backup (blocking)
             try:
                 date_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
                 if db == 'postgres':
                     file_path = postgres_backup.backup(config, date_str, tables.split(',') if tables else None,
-                                                      schema_only, data_only, compress)
+                                                    schema_only, data_only, compress)
                 elif db == 'mysql':
                     file_path = mysql_backup.backup(config, date_str, tables.split(',') if tables else None,
-                                                   schema_only, data_only, compress)
+                                                    schema_only, data_only, compress)
                 else:
                     logger.error(f"Unsupported DB {db} in scheduler.")
                     break
@@ -79,28 +89,16 @@ class Scheduler:
                 if notify:
                     self.emailer = EmailNotifier(config)
                     threading.Thread(target=self.emailer.notify_in_background,
-                                     args=(notify, [file_path], db, 1, True), daemon=True).start()
+                                    args=(notify, [file_path], db, 1, True), daemon=True).start()
 
+                # Save updated state
                 with self.lock:
                     schedule["completed"] = completed + 1
+                    schedule["last_backup_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     self.state_manager.save_schedules(self.schedules)
 
             except Exception as e:
                 logger.error(f"Scheduled backup failed for {db}: {e}")
-                break
-
-            # Sleep for gap days if more backups left
-            with self.lock:
-                schedule = self.schedules.get(db)
-                if schedule and schedule.get("completed", 0) < schedule.get("count", 0):
-                    gap_days = schedule.get("gap", 1)
-                else:
-                    gap_days = 0
-
-            if gap_days > 0:
-                logger.info(f"Sleeping for {gap_days} day(s) before next backup for {db}")
-                time.sleep(gap_days * 24 * 60 * 60)
-            else:
                 break
 
     def add_schedule(self, db, count, gap, tables, schema_only, data_only, compress, notify):
@@ -145,7 +143,7 @@ if __name__ == "__main__":
     from state_manager import StateManager
     state_mgr = StateManager()
     scheduler = Scheduler(state_mgr)
-    
+    logger.info("Scheduler started. Waiting for scheduled tasks...")
     # Block forever
     while True:
         time.sleep(60)

@@ -75,7 +75,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",
-            "args": ["schedule", "--db", "mysql", "--count", "3", "--gap", "2", "--notify", "pawan_arora1616@yahoo.com"],
+            "args": ["schedule", "--db", "mysql", "--count", "3", "--gap", "2"],
             "console": "integratedTerminal"
         },
 

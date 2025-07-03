@@ -111,7 +111,6 @@ def backup(db, count, tables, schema_only, data_only, compress, notify, incremen
 @click.option('--notify', default=None, help='Email address to notify after each backup')
 def schedule(db, count, gap, tables, schema_only, data_only, compress, notify):
     """Schedule recurring backups"""
-    config = load_config()
     scheduler.add_schedule(
         db=db,
         count=count,

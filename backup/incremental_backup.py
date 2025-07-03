@@ -14,7 +14,7 @@ def get_last_binlog_position(config):
         f"-P{my['port']}",
         f"-u{my['user']}",
         f"-p{my['password']}",
-        "-e", "SHOW MASTER STATUS;"
+        "-e", "SHOW BINARY LOG STATUS;"
     ]
 
     # Find fallback Docker container (optional)
@@ -26,12 +26,16 @@ def get_last_binlog_position(config):
     if not result:
         raise Exception("SHOW MASTER STATUS failed")
 
-    lines = result.stdout.strip().split('\n')
+    lines = result.strip().split('\n')
     if len(lines) < 2:
-        raise Exception("Unexpected result from SHOW MASTER STATUS")
+        raise Exception("Unexpected result from SHOW BINARY LOG STATUS")
 
-    parts = lines[1].split('\t')
-    return parts[0], parts[1]  # log_file, log_pos
+    header = lines[0].split('\t')
+    values = lines[1].split('\t')
+
+    binlog_file = values[header.index("File")]
+    position = values[header.index("Position")]
+    return binlog_file, position  # log_file, log_pos
 
 def mysql_incremental_backup(config, date):
     log_file, _ = get_last_binlog_position(config)
@@ -39,8 +43,8 @@ def mysql_incremental_backup(config, date):
     output_path = os.path.join("/tmp", binlog_file)
 
     my = config["mysql"]
-    if is_mysql_in_docker():
-        container = get_mysql_container_name()
+    container = find_running_container("mysql")
+    if container:
         cmd = [
             "docker", "exec", container,
             "mysqlbinlog",
