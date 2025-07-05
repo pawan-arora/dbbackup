@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import click
 import threading
 import os
@@ -170,6 +172,23 @@ def cleanup(retention_days):
     logger.info(f"Starting cleanup for backups older than {retention_days} days")
     s3_cleanup.cleanup_s3(config, retention_days)
     logger.info(f"Cleanup completed.")
+
+@cli.command()
+@click.option('--db', type=click.Choice(['postgres', 'mysql']), default=None, help='Filter backups by DB type')
+def list_backups(db):
+    """List all backups uploaded to S3"""
+    config = load_config()
+    backups = uploader.list_backups(config, db_filter=db)
+
+    if not backups:
+        click.echo("No backups found.")
+        return
+
+    click.echo(f"Backups in S3 ({config['s3']['bucket']}):\n")
+    for backup in sorted(backups, key=lambda x: x['last_modified'], reverse=True):
+        size_kb = backup['size'] / 1024
+        timestamp = backup['last_modified'].strftime('%Y-%m-%d %H:%M:%S')
+        click.echo(f"- {backup['key']} | Uploaded at: {timestamp} | Size: {size_kb:.2f} KB")
 
 if __name__ == '__main__':
     cli()

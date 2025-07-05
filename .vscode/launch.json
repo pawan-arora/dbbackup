@@ -71,11 +71,11 @@
 
         // New: Schedule Backup - MySQL
         {
-            "name": "Schedule Backup MySQL (3 backups every 2 days)",
+            "name": "Schedule Backup MySQL (3 backups every 1 days)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",
-            "args": ["schedule", "--db", "mysql", "--count", "3", "--gap", "2"],
+            "args": ["schedule", "--db", "mysql", "--count", "3", "--gap", "1"],
             "console": "integratedTerminal"
         },
 
@@ -116,6 +116,24 @@
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",
             "args": ["logs", "--lines", "50"],
+            "console": "integratedTerminal"
+        },
+
+        {
+            "name": "List S3 Backups (MySQL)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["list-backups", "--db", "mysql"],
+            "console": "integratedTerminal"
+        },
+
+        {
+            "name": "List S3 Backups (Postgres)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "args": ["list-backups", "--db", "postgres"],
             "console": "integratedTerminal"
         }
     ]

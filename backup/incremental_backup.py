@@ -38,10 +38,12 @@ def get_last_binlog_position(config):
     return binlog_file, position  # log_file, log_pos
 
 def mysql_incremental_backup(config, date):
+    from pathlib import Path
     log_file, _ = get_last_binlog_position(config)
     binlog_file = f"mysql_binlog_backup_{date}.sql"
-    output_path = os.path.join("/tmp", binlog_file)
-
+    tmp_dir = Path(os.getenv("TMP", os.getenv("TEMP", "/tmp")))
+    # output_path = os.path.join("/tmp", binlog_file)
+    output_path = tmp_dir / binlog_file
     my = config["mysql"]
     container = find_running_container("mysql")
     if container:
