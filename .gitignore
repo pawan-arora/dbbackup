@@ -3,3 +3,5 @@ config.yaml
 logs/
 schedules.json
 __pycache__/
+config/
+*.log

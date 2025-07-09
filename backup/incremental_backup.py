@@ -40,7 +40,7 @@ def get_last_binlog_position(config):
 def mysql_incremental_backup(config, date):
     from pathlib import Path
     log_file, _ = get_last_binlog_position(config)
-    binlog_file = f"mysql_binlog_backup_{date}.sql"
+    binlog_file = f"mysql_incremental_backup_{date}.sql"
     tmp_dir = Path(os.getenv("TMP", os.getenv("TEMP", "/tmp")))
     # output_path = os.path.join("/tmp", binlog_file)
     output_path = tmp_dir / binlog_file
