@@ -56,10 +56,11 @@ class Scheduler:
                     last_backup_time = datetime.strptime(last_backup_str, "%Y-%m-%d %H:%M:%S")
                     next_allowed_time = last_backup_time + timedelta(days=gap_days)
                     now = datetime.now()
-                    if now < next_allowed_time:
-                        sleep_seconds = (next_allowed_time - now).total_seconds()
-                        logger.info(f"Next backup for {db} scheduled in {int(sleep_seconds)} seconds.")
-                        time.sleep(sleep_seconds)
+                    time.sleep(60)
+                    # if now < next_allowed_time:
+                    #     sleep_seconds = (next_allowed_time - now).total_seconds()
+                    #     logger.info(f"Next backup for {db} scheduled in {int(sleep_seconds)} seconds.")
+                    #     time.sleep(sleep_seconds)
 
                 # Prepare backup params
                 config = schedule.get("config")

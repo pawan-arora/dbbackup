@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only source code, NOT configs or logs
-COPY cli.py scheduler.py config_loader.py state_manager.py ./
+COPY cli.py scheduler.py config_loader.py state_manager.py run_scheduler.py ./
 COPY backup ./backup
 COPY s3 ./s3
 COPY utils ./utils
@@ -31,4 +31,4 @@ RUN mv cli.py dbbackup \
     && ln -s /app/dbbackup /usr/local/bin/dbbackup
 
 # Default CMD: start scheduler on container start
-CMD ["python", "scheduler.py"]
+CMD ["python", "run_scheduler.py"]

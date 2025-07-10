@@ -6,6 +6,5 @@ services:
     container_name: dbbackup_service
     volumes:
       - ./logs:/app/logs
-      - ./config:/app/config
     tty: true
     restart: always

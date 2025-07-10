@@ -20,7 +20,13 @@ STATE_FILE = "schedules.json"
 LOG_FILE = "logs/backup.log"
 
 state_manager = StateManager()
-scheduler = Scheduler(state_manager)
+_scheduler = Scheduler(state_manager)
+
+def get_scheduler():
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = Scheduler(state_manager)
+    return _scheduler
 
 def run_backup(config, db, count, tables, schema_only, data_only, compress, notify_email, incremental):
     tables_list = tables.split(',') if tables else None
@@ -113,7 +119,7 @@ def backup(db, count, tables, schema_only, data_only, compress, notify, incremen
 @click.option('--notify', default=None, help='Email address to notify after each backup')
 def schedule(db, count, gap, tables, schema_only, data_only, compress, notify):
     """Schedule recurring backups"""
-    scheduler.add_schedule(
+    get_scheduler().add_schedule(
         db=db,
         count=count,
         gap=gap,
@@ -128,7 +134,7 @@ def schedule(db, count, gap, tables, schema_only, data_only, compress, notify):
 @cli.command()
 def status():
     """Show all active backup schedules"""
-    schedules = scheduler.get_active_schedules()
+    schedules = get_scheduler().get_active_schedules()
     if not schedules:
         click.echo("No active schedules.")
         return
@@ -147,7 +153,7 @@ def status():
 @click.option('--db', required=True, type=click.Choice(['postgres', 'mysql']))
 def cancel(db):
     """Cancel active backup schedule for a database"""
-    if scheduler.cancel_schedule(db):
+    if get_scheduler().cancel_schedule(db):
         click.echo(f"Cancelled schedule for {db}.")
     else:
         click.echo(f"No active schedule found for {db}.")
@@ -169,9 +175,9 @@ def logs(lines):
 def cleanup(retention_days):
     """Cleanup old backups from S3"""
     config = load_config()
-    logger.info(f"Starting cleanup for backups older than {retention_days} days")
+    click.echo(f"Starting cleanup for backups older than {retention_days} days")
     s3_cleanup.cleanup_s3(config, retention_days)
-    logger.info(f"Cleanup completed.")
+    click.echo(f"Cleanup completed.")
 
 @cli.command()
 @click.option('--db', type=click.Choice(['postgres', 'mysql']), default=None, help='Filter backups by DB type')
@@ -184,11 +190,28 @@ def list_backups(db):
         click.echo("No backups found.")
         return
 
-    click.echo(f"Backups in S3 ({config['s3']['bucket']}):\n")
+    logger.info(f"Backups in S3 ({config['s3']['bucket']}):\n")
     for backup in sorted(backups, key=lambda x: x['last_modified'], reverse=True):
         size_kb = backup['size'] / 1024
         timestamp = backup['last_modified'].strftime('%Y-%m-%d %H:%M:%S')
-        click.echo(f"- {backup['key']} | Uploaded at: {timestamp} | Size: {size_kb:.2f} KB")
+        logger.info(f"- {backup['key']} | Uploaded at: {timestamp} | Size: {size_kb:.2f} KB")
+
+@cli.command(name="load-config")
+@click.option('--path', prompt="Enter YAML config file path", help="Path to your config.yaml file")
+def load_config_command(path):
+    import yaml
+    """
+    Load and display a YAML config file interactively.
+    """
+    try:
+        config = load_config(path)
+        click.echo("✅ Config loaded successfully!")
+        click.echo("Contents:")
+        click.echo(yaml.dump(config, sort_keys=False))
+    except Exception as e:
+        click.echo(f" Failed to load config: {e}")
+
+
 
 if __name__ == '__main__':
     cli()

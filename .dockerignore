@@ -1,10 +1,2 @@
 config/
-*.log
 logs/
-__pycache__/
-*.pyc
-.env
-*.db
-*.pem
-*.crt
-*.key
