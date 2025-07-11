@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-    
+
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -19,6 +19,8 @@ COPY backup ./backup
 COPY s3 ./s3
 COPY utils ./utils
 COPY cleanup ./cleanup
+
+RUN sed -i 's/\r$//' run_scheduler.py
 
 # Create logs directory inside image (empty initially)
 RUN mkdir -p logs

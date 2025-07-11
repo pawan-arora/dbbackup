@@ -1,4 +1,5 @@
-# run_scheduler.py
+#!/usr/bin/env python3
+
 from scheduler import Scheduler
 from state_manager import StateManager
 from utils.logger import logger
